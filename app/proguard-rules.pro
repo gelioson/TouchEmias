@@ -1,0 +1,5 @@
+-keep class ru.touchemiasapp.data.api.model.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
+-dontwarn okhttp3.**
+-dontwarn retrofit2.**

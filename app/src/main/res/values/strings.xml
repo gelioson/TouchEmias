@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TouchEMIAS</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Вход в ЕМИАС</string>
+    <string name="onboarding_oms_hint">Номер полиса ОМС</string>
+    <string name="onboarding_birthdate_hint">Дата рождения (ДД.ММ.ГГГГ)</string>
+    <string name="onboarding_check_btn">Проверить полис</string>
+    <string name="onboarding_error_oms">Номер полиса не найден или данные неверны</string>
+
+    <!-- Specialities -->
+    <string name="specialities_title">Специальность</string>
+    <string name="specialities_loading">Загрузка специальностей…</string>
+    <string name="specialities_empty">Нет доступных специальностей</string>
+
+    <!-- Doctors -->
+    <string name="doctors_title">Выбор врача</string>
+    <string name="doctors_loading">Загрузка врачей…</string>
+    <string name="doctors_empty">Врачи не найдены</string>
+    <string name="doctors_slots_loading">Загрузка расписания…</string>
+    <string name="doctors_slots_empty">Нет доступных записей</string>
+    <string name="doctors_next_btn">Далее (%d выбрано)</string>
+
+    <!-- Schedule (date/time picker) -->
+    <string name="schedule_title">Параметры мониторинга</string>
+    <string name="schedule_dates_label">Желаемые даты</string>
+    <string name="schedule_time_from">Время с</string>
+    <string name="schedule_time_to">Время до</string>
+    <string name="schedule_mode_label">Действие при появлении записи</string>
+    <string name="schedule_mode_notify">Только уведомить</string>
+    <string name="schedule_mode_book">Записать автоматически</string>
+    <string name="schedule_interval_label">Интервал проверки</string>
+    <string name="schedule_start_btn">Запустить мониторинг</string>
+
+    <!-- Intervals -->
+    <string name="interval_30s">30 секунд</string>
+    <string name="interval_1m">1 минута</string>
+    <string name="interval_5m">5 минут</string>
+    <string name="interval_10m">10 минут</string>
+    <string name="interval_30m">30 минут</string>
+    <string name="interval_1h">1 час</string>
+
+    <!-- Monitor screen -->
+    <string name="monitor_title">Мониторинг</string>
+    <string name="monitor_status_active">Активен</string>
+    <string name="monitor_status_inactive">Остановлен</string>
+    <string name="monitor_start_btn">Запустить</string>
+    <string name="monitor_stop_btn">Остановить</string>
+    <string name="monitor_edit_hint">Для изменения параметров остановите мониторинг</string>
+    <string name="monitor_last_check">Последняя проверка: %s</string>
+    <string name="monitor_doctor_label">Врач: %s</string>
+
+    <!-- Logs -->
+    <string name="logs_title">Логи</string>
+    <string name="logs_empty">Логи пусты</string>
+    <string name="logs_share_btn">Поделиться</string>
+    <string name="logs_clear_btn">Очистить</string>
+    <string name="logs_share_subject">Логи TouchEMIAS</string>
+    <string name="logs_slots_found">Найдено слотов: %d</string>
+    <string name="logs_booked">Запись создана: %s</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_monitor_name">Мониторинг записи</string>
+    <string name="notif_channel_monitor_desc">Фоновый мониторинг ЕМИАС</string>
+    <string name="notif_channel_alert_name">Доступна запись</string>
+    <string name="notif_channel_alert_desc">Уведомления о появлении свободных слотов</string>
+    <string name="notif_monitor_title">TouchEMIAS мониторинг</string>
+    <string name="notif_monitor_text">Идёт мониторинг расписания врачей…</string>
+    <string name="notif_slot_found_title">Появилась запись!</string>
+    <string name="notif_slot_found_text">%s — %s в %s</string>
+    <string name="notif_slot_booked_title">Вы записаны!</string>
+    <string name="notif_slot_booked_text">%s — %s в %s</string>
+
+    <!-- Common -->
+    <string name="btn_next">Далее</string>
+    <string name="btn_back">Назад</string>
+    <string name="btn_save">Сохранить</string>
+    <string name="btn_cancel">Отмена</string>
+    <string name="error_network">Ошибка сети. Проверьте интернет-соединение.</string>
+    <string name="error_unknown">Неизвестная ошибка. Попробуйте позже.</string>
+</resources>
