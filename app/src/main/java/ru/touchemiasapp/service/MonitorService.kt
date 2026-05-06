@@ -66,7 +66,7 @@ class MonitorService : Service() {
 
     private suspend fun checkDoctors(config: WatchConfig, omsNumber: String, birthDate: String) {
         for (doctor in config.doctors) {
-            val result = emiasRepository.getAvailableSlots(omsNumber, birthDate, doctor.availableResourceId)
+            val result = emiasRepository.getAvailableSlots(omsNumber, birthDate, doctor.availableResourceId, doctor.complexResourceId)
 
             val (slots, error) = if (result.isSuccess) {
                 result.getOrDefault(emptyList()) to null

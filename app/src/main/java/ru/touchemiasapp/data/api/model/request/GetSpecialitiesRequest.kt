@@ -2,9 +2,8 @@ package ru.touchemiasapp.data.api.model.request
 
 import com.google.gson.annotations.SerializedName
 
-class GetDoctorsRequest(
+class GetSpecialitiesRequest(
     omsNumber: String,
     birthDate: String,
-    // New API expects a Set<Long>, not a single Long
-    @SerializedName("specialityId") val specialityId: Set<Long>
+    @SerializedName("isChatBotEnabled") val isChatBotEnabled: Boolean = false
 ) : OmsData(omsNumber, birthDate)

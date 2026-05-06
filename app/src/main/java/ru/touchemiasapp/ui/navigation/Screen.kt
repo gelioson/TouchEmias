@@ -1,7 +1,8 @@
 package ru.touchemiasapp.ui.navigation
 
 sealed class Screen(val route: String) {
-    data object Onboarding : Screen("onboarding")
+    data object Login : Screen("login")
+    data object PolicySelection : Screen("policy_selection")
     data object Specialities : Screen("specialities")
     data object Doctors : Screen("doctors/{specialityId}/{specialityName}") {
         fun create(specialityId: Long, specialityName: String) =

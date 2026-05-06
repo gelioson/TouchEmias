@@ -104,7 +104,11 @@ class DoctorsViewModel @Inject constructor(
                 })
             }
             val userPrefs = prefs.userPreferences.first()
-            repository.getAvailableSlots(userPrefs.omsNumber, userPrefs.birthDate, doctorId)
+            val doctor = _state.value.doctors.find { it.doctor.availableResourceId == doctorId }?.doctor
+            repository.getAvailableSlots(
+                userPrefs.omsNumber, userPrefs.birthDate,
+                doctorId, doctor?.complexResourceId ?: doctorId
+            )
                 .onSuccess { slots ->
                     _state.update { state ->
                         state.copy(doctors = state.doctors.map {

@@ -2,12 +2,17 @@ package ru.touchemiasapp.data.api.model.response
 
 import com.google.gson.annotations.SerializedName
 
-// Generic wrapper for all EMIAS API responses
-// TODO: verify actual wrapper structure against real API traffic
 data class EmiasResponse<T>(
-    @SerializedName("result") val result: T?,
-    @SerializedName("errorCode") val errorCode: Int? = null,
-    @SerializedName("errorMessage") val errorMessage: String? = null
+    @SerializedName("result") val result: T? = null,
+    @SerializedName("error") val error: EmiasError? = null
 ) {
-    val isSuccess: Boolean get() = errorCode == null || errorCode == 0
+    val isSuccess: Boolean get() = error == null
+    val errorMessage: String? get() = error?.description
 }
+
+data class EmiasError(
+    @SerializedName("code") val code: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("type") val type: String? = null,
+    @SerializedName("origin") val origin: String? = null
+)

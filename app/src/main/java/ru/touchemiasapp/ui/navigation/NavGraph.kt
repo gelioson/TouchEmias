@@ -9,29 +9,36 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import ru.touchemiasapp.data.auth.AuthRepository
+import ru.touchemiasapp.ui.auth.LoginScreen
+import ru.touchemiasapp.ui.auth.PolicySelectionScreen
 import ru.touchemiasapp.ui.doctors.DoctorsScreen
 import ru.touchemiasapp.ui.logs.LogsScreen
 import ru.touchemiasapp.ui.monitor.MonitorScreen
-import ru.touchemiasapp.ui.onboarding.OnboardingScreen
-import ru.touchemiasapp.ui.onboarding.OnboardingViewModel
 import ru.touchemiasapp.ui.schedule.ScheduleScreen
 import ru.touchemiasapp.ui.specialities.SpecialitiesScreen
 
 @Composable
-fun NavGraph() {
+fun NavGraph(authRepository: AuthRepository) {
     val navController = rememberNavController()
-
-    val onboardingVm: OnboardingViewModel = hiltViewModel()
-    val isRegistered by onboardingVm.isRegistered.collectAsState()
+    val isLoggedIn by authRepository.isLoggedIn.collectAsState(initial = false)
 
     NavHost(
         navController = navController,
-        startDestination = if (isRegistered) Screen.Monitor.route else Screen.Onboarding.route
+        startDestination = if (isLoggedIn) Screen.Monitor.route else Screen.Login.route
     ) {
-        composable(Screen.Onboarding.route) {
-            OnboardingScreen(
+        composable(Screen.Login.route) {
+            LoginScreen(
                 viewModel = hiltViewModel(),
-                onSuccess = { navController.navigate(Screen.Monitor.route) { popUpTo(0) } }
+                onSuccess = { navController.navigate(Screen.Monitor.route) { popUpTo(0) } },
+                onMultiplePolicies = { navController.navigate(Screen.PolicySelection.route) }
+            )
+        }
+
+        composable(Screen.PolicySelection.route) {
+            PolicySelectionScreen(
+                viewModel = hiltViewModel(),
+                onSelected = { navController.navigate(Screen.Monitor.route) { popUpTo(0) } }
             )
         }
 
@@ -70,7 +77,9 @@ fun NavGraph() {
             ScheduleScreen(
                 viewModel = hiltViewModel(),
                 onStartMonitoring = {
-                    navController.navigate(Screen.Monitor.route) { popUpTo(Screen.Monitor.route) { inclusive = true } }
+                    navController.navigate(Screen.Monitor.route) {
+                        popUpTo(Screen.Monitor.route) { inclusive = true }
+                    }
                 },
                 onBack = { navController.popBackStack() }
             )
