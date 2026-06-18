@@ -8,7 +8,7 @@ data class GetTokensRequest(
 )
 
 data class RefreshTokenRequest(
-    val refreshToken: String
+    @SerializedName("refresh_token") val refreshToken: String
 )
 
 data class TokenResponse(

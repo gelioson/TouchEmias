@@ -6,19 +6,18 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import okhttp3.Authenticator
+import okhttp3.Cookie
+import okhttp3.CookieJar
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.Route
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import ru.touchemiasapp.BuildConfig
 import ru.touchemiasapp.data.api.EmiasApi
 import ru.touchemiasapp.data.api.auth.AuthApi
-import ru.touchemiasapp.data.auth.AuthRepository
 import ru.touchemiasapp.data.auth.SudirAuthDataStore
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import javax.inject.Named
 import javax.inject.Singleton
@@ -33,18 +32,23 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideCookieJar(): CookieJar = object : CookieJar {
+        private val store = ConcurrentHashMap<String, List<Cookie>>()
+        override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+            store[url.host] = cookies
+        }
+        override fun loadForRequest(url: HttpUrl): List<Cookie> =
+            store[url.host] ?: emptyList()
+    }
+
+    @Provides
+    @Singleton
     @Named("plain")
-    fun providePlainOkHttpClient(): OkHttpClient =
+    fun providePlainOkHttpClient(cookieJar: CookieJar): OkHttpClient =
         OkHttpClient.Builder()
+            .cookieJar(cookieJar)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
-            .apply {
-                if (BuildConfig.DEBUG) {
-                    addInterceptor(
-                        HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
-                    )
-                }
-            }
             .build()
 
     @Provides
@@ -52,36 +56,26 @@ object NetworkModule {
     @Named("auth")
     fun provideAuthOkHttpClient(
         @Named("plain") base: OkHttpClient,
-        authDataStore: SudirAuthDataStore,
-        // Use Provider to break circular dependency: AuthRepository → AuthApi → plain client
-        authRepositoryProvider: dagger.Lazy<AuthRepository>
+        authDataStore: SudirAuthDataStore
     ): OkHttpClient = base.newBuilder()
         .addInterceptor { chain ->
-            val token = authDataStore.getAccessTokenSync()
-            val request = if (token.isNullOrBlank()) {
-                chain.request()
-            } else {
-                chain.request().newBuilder()
-                    .header("EI-Token", token)
-                    .build()
+            val cookies = authDataStore.getSessionCookiesSync()
+            val eiToken = authDataStore.getEiTokenSync()
+            val builder = chain.request().newBuilder()
+            if (!cookies.isNullOrBlank()) builder.header("Cookie", cookies)
+            if (!eiToken.isNullOrBlank()) {
+                builder.header("EI-Token", eiToken)
+                builder.header("X-App", "portal")
             }
-            chain.proceed(request)
+            chain.proceed(builder.build())
         }
-        .authenticator(object : Authenticator {
-            override fun authenticate(route: Route?, response: Response): Request? {
-                // Prevent infinite retry loop
-                if (response.request.header("EI-Token-Retried") != null) return null
-                val refreshed = kotlinx.coroutines.runBlocking {
-                    authRepositoryProvider.get().refreshToken()
-                }
-                if (!refreshed) return null
-                val newToken = authDataStore.getAccessTokenSync() ?: return null
-                return response.request.newBuilder()
-                    .header("EI-Token", newToken)
-                    .header("EI-Token-Retried", "true")
-                    .build()
+        .apply {
+            if (BuildConfig.DEBUG) {
+                addInterceptor(
+                    HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
+                )
             }
-        })
+        }
         .build()
 
     @Provides

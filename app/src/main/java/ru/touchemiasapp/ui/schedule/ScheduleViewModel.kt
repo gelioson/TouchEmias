@@ -4,9 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.touchemiasapp.data.repository.WatchJobRepository
@@ -32,17 +31,6 @@ class ScheduleViewModel @Inject constructor(
     private val _state = MutableStateFlow(ScheduleUiState())
     val state: StateFlow<ScheduleUiState> = _state
 
-    // Loaded from the draft WatchJob saved by DoctorsViewModel
-    private var draftConfig: WatchConfig? = null
-
-    init {
-        viewModelScope.launch {
-            draftConfig = watchJobRepository.observeLatest()
-                .stateIn(viewModelScope, SharingStarted.Eagerly, null)
-                .value
-        }
-    }
-
     fun toggleDate(date: String) {
         _state.update { s ->
             val dates = s.selectedDates.toMutableSet()
@@ -58,11 +46,10 @@ class ScheduleViewModel @Inject constructor(
 
     fun save(onDone: () -> Unit) {
         val s = _state.value
-        val draft = draftConfig ?: return
         if (s.selectedDates.isEmpty()) return
-
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
+            val draft = watchJobRepository.observeLatest().firstOrNull() ?: return@launch
             watchJobRepository.save(
                 draft.copy(
                     selectedDates = s.selectedDates.sorted(),

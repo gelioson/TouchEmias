@@ -18,14 +18,28 @@ private val Context.authDataStore by preferencesDataStore(name = "sudir_auth")
 class SudirAuthDataStore @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+        private val SESSION_COOKIES = stringPreferencesKey("session_cookies")
+    private val EI_TOKEN = stringPreferencesKey("ei_token")
     private val ACCESS_TOKEN = stringPreferencesKey("access_token")
     private val REFRESH_TOKEN = stringPreferencesKey("refresh_token")
     private val ID_TOKEN = stringPreferencesKey("id_token")
 
     val isLoggedIn: Flow<Boolean> = context.authDataStore.data
-        .map { !it[ACCESS_TOKEN].isNullOrBlank() }
+        .map { !it[SESSION_COOKIES].isNullOrBlank() }
 
     // Called from OkHttp interceptor (background thread) — runBlocking is safe here
+    fun getSessionCookiesSync(): String? = runBlocking {
+        context.authDataStore.data.first()[SESSION_COOKIES]
+    }
+
+    fun getEiTokenSync(): String? = runBlocking {
+        context.authDataStore.data.first()[EI_TOKEN]
+    }
+
+    suspend fun saveEiToken(token: String) {
+        context.authDataStore.edit { it[EI_TOKEN] = token }
+    }
+
     fun getAccessTokenSync(): String? = runBlocking {
         context.authDataStore.data.first()[ACCESS_TOKEN]
     }
@@ -34,8 +48,11 @@ class SudirAuthDataStore @Inject constructor(
         context.authDataStore.data.first()[REFRESH_TOKEN]
     }
 
-    suspend fun getAccessToken(): String? = context.authDataStore.data.first()[ACCESS_TOKEN]
     suspend fun getRefreshToken(): String? = context.authDataStore.data.first()[REFRESH_TOKEN]
+
+    suspend fun saveSessionCookies(cookieString: String) {
+        context.authDataStore.edit { it[SESSION_COOKIES] = cookieString }
+    }
 
     suspend fun saveTokens(accessToken: String, refreshToken: String, idToken: String?) {
         context.authDataStore.edit { prefs ->

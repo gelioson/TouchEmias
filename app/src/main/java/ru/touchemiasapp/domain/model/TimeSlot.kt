@@ -5,6 +5,6 @@ data class TimeSlot(
     val startTime: String,      // HH:mm
     val endTime: String,        // HH:mm
     val complexResourceId: Long,
-    val receptionTypeId: String,
+    val receptionTypeId: Long,
     val availableResourceId: Long
 )

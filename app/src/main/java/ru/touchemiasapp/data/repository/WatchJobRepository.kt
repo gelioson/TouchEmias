@@ -34,6 +34,7 @@ class WatchJobRepository @Inject constructor(
         val doctors = doctorIds.indices.map { i ->
             Doctor(
                 availableResourceId = doctorIds[i],
+                complexResourceId = complexResourceIds.getOrElse(i) { doctorIds[i] },
                 name = doctorNames.getOrElse(i) { "" },
                 specialityName = specialityName,
                 clinicId = 0,
@@ -59,6 +60,7 @@ class WatchJobRepository @Inject constructor(
         specialityId = specialityId,
         specialityName = specialityName,
         doctorIds = doctors.map { it.availableResourceId },
+        complexResourceIds = doctors.map { it.complexResourceId },
         doctorNames = doctors.map { it.name },
         clinicNames = doctors.map { it.clinicName },
         selectedDates = selectedDates,

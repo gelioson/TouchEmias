@@ -15,6 +15,7 @@ data class WatchJobEntity(
     @ColumnInfo val specialityId: Long,
     @ColumnInfo val specialityName: String,
     @ColumnInfo val doctorIds: List<Long>,
+    @ColumnInfo val complexResourceIds: List<Long>,
     @ColumnInfo val doctorNames: List<String>,
     @ColumnInfo val clinicNames: List<String>,
     @ColumnInfo val selectedDates: List<String>,   // yyyy-MM-dd

@@ -1,16 +1,15 @@
 package ru.touchemiasapp.data.auth
 
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import android.util.Log
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import ru.touchemiasapp.data.api.auth.AuthApi
 import ru.touchemiasapp.data.api.auth.GetTokensRequest
-import ru.touchemiasapp.data.api.auth.JsonRpcRequest
-import ru.touchemiasapp.data.api.auth.OmsPolicy
 import ru.touchemiasapp.data.api.auth.RefreshTokenRequest
 import ru.touchemiasapp.data.preferences.UserPreferencesDataStore
 import javax.inject.Inject
@@ -22,8 +21,7 @@ class AuthRepository @Inject constructor(
     private val authApi: AuthApi,
     private val authDataStore: SudirAuthDataStore,
     private val userPrefsDataStore: UserPreferencesDataStore,
-    @Named("plain") private val okHttpClient: OkHttpClient,
-    private val gson: Gson
+    @Named("plain") private val httpClient: OkHttpClient
 ) {
     companion object {
         const val REDIRECT_URL = "https://emias.info/sudir-web"
@@ -38,18 +36,48 @@ class AuthRepository @Inject constructor(
 
     val isLoggedIn: Flow<Boolean> = authDataStore.isLoggedIn
 
-    // Policies returned after code exchange — held in memory for PolicySelectionScreen
-    var pendingPolicies: List<OmsPolicy> = emptyList()
-        private set
+    suspend fun saveSessionCookies(cookieString: String): Result<Unit> = runCatching {
+        authDataStore.saveSessionCookies(cookieString)
+    }
 
-    suspend fun exchangeCode(code: String): Result<List<OmsPolicy>> = runCatching {
+    suspend fun completeLogin(eiToken: String): Result<Unit> = runCatching {
+        authDataStore.saveEiToken(eiToken)
+
+        withContext(Dispatchers.IO) {
+            val body = """{"accessToken":"$eiToken"}""".toRequestBody("application/json".toMediaType())
+            val req = Request.Builder()
+                .url("https://emias.info/web-api/whoAmI/")
+                .post(body)
+                .header("EI-Token", eiToken)
+                .header("X-App", "portal")
+                .header("Accept", "application/json, text/plain, */*")
+                .build()
+
+            httpClient.newCall(req).execute().use { resp ->
+                Log.d("TouchEmias", "whoAmI code=${resp.code}")
+                val bodyStr = resp.body?.string() ?: ""
+                Log.d("TouchEmias", "whoAmI body=${bodyStr.take(500)}")
+                val setCookies = resp.headers("Set-Cookie")
+                Log.d("TouchEmias", "whoAmI Set-Cookie: $setCookies")
+
+                val newCookie = setCookies
+                    .find { it.startsWith("session-cookie=") }
+                    ?.substringAfter("session-cookie=")?.substringBefore(";")
+                if (!newCookie.isNullOrBlank()) {
+                    authDataStore.saveSessionCookies("session-cookie=$newCookie")
+                    Log.d("TouchEmias", "Saved fresh session-cookie from OkHttp whoAmI")
+                } else if (resp.code != 200) {
+                    error("whoAmI failed: ${resp.code} $bodyStr")
+                }
+            }
+        }
+    }
+
+    suspend fun exchangeCode(code: String): Result<Unit> = runCatching {
         val response = authApi.getTokens(GetTokensRequest(code, REDIRECT_URL))
         val accessToken = response.accessToken ?: error("No access token in response")
         val refreshToken = response.refreshToken ?: error("No refresh token in response")
         authDataStore.saveTokens(accessToken, refreshToken, response.idToken)
-        val policies = fetchPoliciesSync(accessToken)
-        pendingPolicies = policies
-        policies
     }
 
     suspend fun refreshToken(): Boolean {
@@ -66,40 +94,8 @@ class AuthRepository @Inject constructor(
         }.getOrDefault(false)
     }
 
-    suspend fun selectPolicy(policy: OmsPolicy) {
-        userPrefsDataStore.save(policy.omsNumber, policy.birthDate)
-    }
-
     suspend fun logout() {
         authDataStore.clear()
         userPrefsDataStore.clear()
-    }
-
-    private fun fetchPoliciesSync(accessToken: String): List<OmsPolicy> {
-        val body = gson.toJson(JsonRpcRequest(method = "oms_list"))
-            .toRequestBody("application/json".toMediaType())
-        val request = Request.Builder()
-            .url("https://emias.info/api/vault/v3/")
-            .post(body)
-            .header("Authorization", "Bearer $accessToken")
-            .build()
-        val responseJson = okHttpClient.newCall(request).execute().use {
-            it.body?.string() ?: ""
-        }
-        val type = object : TypeToken<Map<String, Any?>>() {}.type
-        val map: Map<String, Any?> = runCatching<Map<String, Any?>> { gson.fromJson(responseJson, type) }.getOrNull()
-            ?: return emptyList()
-        @Suppress("UNCHECKED_CAST")
-        val resultList = map["result"] as? List<Map<String, Any?>> ?: return emptyList()
-        return resultList.mapNotNull { item ->
-            val oms = item["omsNumber"] as? String ?: return@mapNotNull null
-            val bd = item["birthDate"] as? String ?: return@mapNotNull null
-            OmsPolicy(
-                omsNumber = oms,
-                birthDate = bd,
-                policyName = item["policyName"] as? String,
-                permissionType = item["permissionType"] as? String
-            )
-        }
     }
 }

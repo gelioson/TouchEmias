@@ -2,10 +2,15 @@ package ru.touchemiasapp.ui.doctors
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -129,13 +134,14 @@ private fun DoctorItem(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SlotsGrid(slots: List<TimeSlot>, modifier: Modifier = Modifier) {
     val grouped = slots.groupBy { it.date }
     Column(modifier) {
         grouped.forEach { (date, daySlots) ->
-            Text(date, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 4.dp))
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Text(formatSlotDate(date), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 4.dp))
+            FlowRow(modifier = Modifier.fillMaxWidth()) {
                 daySlots.forEach { slot ->
                     Card(
                         modifier = Modifier.padding(2.dp),
@@ -152,3 +158,11 @@ private fun SlotsGrid(slots: List<TimeSlot>, modifier: Modifier = Modifier) {
         }
     }
 }
+
+private val INPUT_DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+private val OUTPUT_DATE_FMT = DateTimeFormatter.ofPattern("EE, d MMMM", Locale("ru"))
+
+private fun formatSlotDate(date: String): String = runCatching {
+    LocalDate.parse(date, INPUT_DATE_FMT).format(OUTPUT_DATE_FMT)
+        .replaceFirstChar { it.uppercaseChar() }
+}.getOrDefault(date)

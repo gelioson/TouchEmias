@@ -21,14 +21,16 @@ class EmiasRepositoryImpl @Inject constructor(
         runCatching {
             val resp = api.getSpecialities(GetSpecialitiesRequest(omsNumber, birthDate))
             if (!resp.isSuccess) error(resp.errorMessage ?: "Failed to load specialities")
-            resp.result?.map { it.toDomain() } ?: emptyList()
+            resp.result?.filter { !it.specialities.isNullOrEmpty() }?.map { it.toDomain() } ?: emptyList()
         }
 
     override suspend fun getDoctors(omsNumber: String, birthDate: String, specialityId: Long): Result<List<Doctor>> =
         runCatching {
             val resp = api.getDoctors(GetDoctorsRequest(omsNumber, birthDate, setOf(specialityId)))
             if (!resp.isSuccess) error(resp.errorMessage ?: "Failed to load doctors")
-            resp.result?.map { it.toDomain() } ?: emptyList()
+            resp.result?.doctorsInfo?.flatMap { lpu ->
+                lpu.availableResources?.map { it.toDomain(lpu) } ?: emptyList()
+            }?.distinctBy { it.availableResourceId } ?: emptyList()
         }
 
     override suspend fun getAvailableSlots(
@@ -42,14 +44,19 @@ class EmiasRepositoryImpl @Inject constructor(
                 GetScheduleRequest(omsNumber, birthDate, availableResourceId, complexResourceId)
             )
             if (!resp.isSuccess) error(resp.errorMessage ?: "Failed to load schedule")
-            resp.result?.flatMap { day ->
-                day.slots?.map { slot -> slot.toDomain(day.date, availableResourceId) } ?: emptyList()
+            val receptionTypeId = resp.result?.availableResource?.receptionType
+                ?.firstOrNull()?.code ?: 0L
+            resp.result?.scheduleOfDay?.flatMap { day ->
+                day.scheduleBySlot?.flatMap { bySlot ->
+                    bySlot.slots?.map { slot ->
+                        slot.toDomain(day.date, bySlot.complexResourceId, availableResourceId, receptionTypeId)
+                    } ?: emptyList()
+                } ?: emptyList()
             } ?: emptyList()
         }
 
     override suspend fun createAppointment(omsNumber: String, birthDate: String, slot: TimeSlot): Result<Unit> =
         runCatching {
-            val datePrefix = slot.date + "T"
             val resp = api.createAppointment(
                 CreateAppointmentRequest(
                     omsNumber = omsNumber,
@@ -57,8 +64,8 @@ class EmiasRepositoryImpl @Inject constructor(
                     availableResourceId = slot.availableResourceId,
                     complexResourceId = slot.complexResourceId,
                     receptionTypeId = slot.receptionTypeId,
-                    startTime = datePrefix + slot.startTime + ":00",
-                    endTime = datePrefix + slot.endTime + ":00"
+                    startTime = "${slot.date}T${slot.startTime}:00+03:00",
+                    endTime = "${slot.date}T${slot.endTime}:00+03:00"
                 )
             )
             if (!resp.isSuccess) error(resp.errorMessage ?: "Failed to create appointment")

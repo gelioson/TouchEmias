@@ -10,8 +10,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import ru.touchemiasapp.data.auth.AuthRepository
+import ru.touchemiasapp.data.preferences.UserPreferencesDataStore
 import ru.touchemiasapp.ui.auth.LoginScreen
-import ru.touchemiasapp.ui.auth.PolicySelectionScreen
+import ru.touchemiasapp.ui.auth.OmsEntryScreen
 import ru.touchemiasapp.ui.doctors.DoctorsScreen
 import ru.touchemiasapp.ui.logs.LogsScreen
 import ru.touchemiasapp.ui.monitor.MonitorScreen
@@ -19,26 +20,35 @@ import ru.touchemiasapp.ui.schedule.ScheduleScreen
 import ru.touchemiasapp.ui.specialities.SpecialitiesScreen
 
 @Composable
-fun NavGraph(authRepository: AuthRepository) {
+fun NavGraph(authRepository: AuthRepository, userPrefsDataStore: UserPreferencesDataStore) {
     val navController = rememberNavController()
     val isLoggedIn by authRepository.isLoggedIn.collectAsState(initial = false)
+    val userPrefs by userPrefsDataStore.userPreferences.collectAsState(
+        initial = ru.touchemiasapp.data.preferences.UserPreferences()
+    )
 
-    NavHost(
-        navController = navController,
-        startDestination = if (isLoggedIn) Screen.Monitor.route else Screen.Login.route
-    ) {
+    val startDestination = when {
+        !isLoggedIn -> Screen.Login.route
+        !userPrefs.isComplete -> Screen.OmsEntry.route
+        else -> Screen.Monitor.route
+    }
+
+    NavHost(navController = navController, startDestination = startDestination) {
         composable(Screen.Login.route) {
             LoginScreen(
                 viewModel = hiltViewModel(),
-                onSuccess = { navController.navigate(Screen.Monitor.route) { popUpTo(0) } },
-                onMultiplePolicies = { navController.navigate(Screen.PolicySelection.route) }
+                onSuccess = {
+                    navController.navigate(Screen.OmsEntry.route) { popUpTo(0) }
+                }
             )
         }
 
-        composable(Screen.PolicySelection.route) {
-            PolicySelectionScreen(
+        composable(Screen.OmsEntry.route) {
+            OmsEntryScreen(
                 viewModel = hiltViewModel(),
-                onSelected = { navController.navigate(Screen.Monitor.route) { popUpTo(0) } }
+                onSaved = {
+                    navController.navigate(Screen.Monitor.route) { popUpTo(0) }
+                }
             )
         }
 

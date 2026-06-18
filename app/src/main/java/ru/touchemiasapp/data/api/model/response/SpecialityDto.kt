@@ -3,11 +3,21 @@ package ru.touchemiasapp.data.api.model.response
 import com.google.gson.annotations.SerializedName
 import ru.touchemiasapp.domain.model.Speciality
 
-// TODO: verify field names against real API traffic
 data class SpecialityDto(
-    @SerializedName("id") val id: Long,
-    @SerializedName("name") val name: String,
-    @SerializedName("codeForPerson") val code: String? = null
+    @SerializedName("code") val code: String,
+    @SerializedName("title") val title: String,
+    @SerializedName("parentCode") val parentCode: String? = null,
+    @SerializedName("parentTitle") val parentTitle: String? = null,
+    @SerializedName("specialities") val specialities: List<SpecialitySubDto>? = null
 ) {
-    fun toDomain() = Speciality(id = id, name = name, code = code ?: "")
+    fun toDomain() = Speciality(
+        id = specialities?.firstOrNull()?.specialityCode?.toLongOrNull() ?: 0L,
+        name = title,
+        code = code
+    )
 }
+
+data class SpecialitySubDto(
+    @SerializedName("specialityCode") val specialityCode: String? = null,
+    @SerializedName("isMultipleLpuSpeciality") val isMultipleLpuSpeciality: Boolean = false
+)

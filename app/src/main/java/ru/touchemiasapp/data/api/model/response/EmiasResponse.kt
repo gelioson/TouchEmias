@@ -3,7 +3,7 @@ package ru.touchemiasapp.data.api.model.response
 import com.google.gson.annotations.SerializedName
 
 data class EmiasResponse<T>(
-    @SerializedName("result") val result: T? = null,
+    @SerializedName("payload") val result: T? = null,
     @SerializedName("error") val error: EmiasError? = null
 ) {
     val isSuccess: Boolean get() = error == null
