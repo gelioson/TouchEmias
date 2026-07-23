@@ -9,15 +9,22 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.ComponentActivity
+import androidx.activity.addCallback
 import ru.touchemiasapp.data.auth.AuthRepository
 
-class LoginWebViewActivity : Activity() {
+class LoginWebViewActivity : ComponentActivity() {
 
     private lateinit var webView: WebView
     private var tokenHandled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        onBackPressedDispatcher.addCallback(this) {
+            if (webView.canGoBack()) webView.goBack()
+            else { setResult(RESULT_CANCELED); finish() }
+        }
 
         webView = WebView(this).apply {
             settings.javaScriptEnabled = true
@@ -88,15 +95,6 @@ class LoginWebViewActivity : Activity() {
         }
 
         setContentView(webView)
-    }
-
-    override fun onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            setResult(RESULT_CANCELED)
-            super.onBackPressed()
-        }
     }
 
     override fun onDestroy() {
