@@ -1,5 +1,9 @@
 package ru.touchemiasapp.ui.monitor
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,8 +36,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.content.PermissionChecker
 import ru.touchemiasapp.R
 import ru.touchemiasapp.domain.model.WatchConfig
 
@@ -44,6 +51,22 @@ fun MonitorScreen(
     onNavigateLogs: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+
+    val notifPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { viewModel.startMonitoring() }
+
+    fun onStartClicked() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                != PermissionChecker.PERMISSION_GRANTED
+        ) {
+            notifPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            viewModel.startMonitoring()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -84,7 +107,7 @@ fun MonitorScreen(
             } else {
                 if (state.config != null) {
                     Button(
-                        onClick = viewModel::startMonitoring,
+                        onClick = ::onStartClicked,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Filled.PlayArrow, null, Modifier.padding(end = 8.dp))

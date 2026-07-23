@@ -31,6 +31,10 @@ class LoginViewModel @Inject constructor(
     private val _state = MutableStateFlow(LoginUiState())
     val state: StateFlow<LoginUiState> = _state
 
+    fun resetError() {
+        _state.update { it.copy(result = LoginResult.Idle) }
+    }
+
     fun onEmiasRedirectStarted() {
         _state.update { it.copy(isLoading = true) }
     }

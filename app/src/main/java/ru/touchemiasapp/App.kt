@@ -3,13 +3,16 @@ package ru.touchemiasapp
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.webkit.WebView
 import dagger.hilt.android.HiltAndroidApp
+import ru.touchemiasapp.BuildConfig
 
 @HiltAndroidApp
 class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
         createNotificationChannels()
     }
 
