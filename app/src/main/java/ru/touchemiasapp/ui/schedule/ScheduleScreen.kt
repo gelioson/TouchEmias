@@ -36,6 +36,7 @@ import ru.touchemiasapp.R
 import ru.touchemiasapp.domain.model.MonitorMode
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -44,7 +45,7 @@ fun ScheduleScreen(viewModel: ScheduleViewModel, onStartMonitoring: () -> Unit, 
     val today = LocalDate.now()
     val nextDays = (0..29).map { today.plusDays(it.toLong()) }
     val fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-    val displayFmt = DateTimeFormatter.ofPattern("d MMM")
+    val displayFmt = DateTimeFormatter.ofPattern("EE, d MMM", Locale("ru"))
 
     Scaffold(
         topBar = {
@@ -68,7 +69,7 @@ fun ScheduleScreen(viewModel: ScheduleViewModel, onStartMonitoring: () -> Unit, 
                     FilterChip(
                         selected = key in state.selectedDates,
                         onClick = { viewModel.toggleDate(key) },
-                        label = { Text(date.format(displayFmt)) }
+                        label = { Text(date.format(displayFmt).replaceFirstChar { it.uppercaseChar() }) }
                     )
                 }
             }
