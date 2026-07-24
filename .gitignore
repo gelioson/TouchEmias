@@ -10,6 +10,7 @@
 .externalNativeBuild
 .cds
 app/build/
+app/release/
 *.apk
 *.aab
 *.ap_
