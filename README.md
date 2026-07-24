@@ -10,6 +10,8 @@
 
 TouchEmias — Android-приложение для автоматического мониторинга доступных талонов на приём к врачу через портал ЕМИАС (emias.info). Приложение проверяет расписание в фоновом режиме и уведомляет пользователя о появлении свободного слота, а в режиме автозаписи — записывает автоматически.
 
+Сервис мониторинга работает **полностью локально, на самом телефоне** — никакого выделенного сервера или облачного бэкенда нет. Приложение само периодически опрашивает API ЕМИАС из фонового `Foreground Service` на устройстве пользователя, поэтому для стабильной работы ему требуется ряд системных разрешений (см. раздел [«Требуемые разрешения»](#требуемые-разрешения)).
+
 ### Возможности
 
 - **Авторизация через mos.ru** — вход через СУДИР OAuth (единый портал госуслуг Москвы)
@@ -20,6 +22,18 @@ TouchEmias — Android-приложение для автоматическог�
 - **Работа в фоне** — мониторинг продолжается после закрытия приложения через Foreground Service
 - **Автозапуск** — возобновление мониторинга после перезагрузки устройства
 - **Журнал событий** — история проверок и действий сервиса
+
+### Как пользоваться
+
+1. **Авторизация.** При первом запуске приложение открывает страницу входа `login.mos.ru` во встроенном `WebView`. Войдите под своей учётной записью mos.ru (СУДИР) — так же, как на сайте госуслуг. После успешного входа приложение перехватывает токен доступа и переходит к следующему шагу.
+2. **Данные полиса.** Введите номер полиса ОМС и дату рождения — по этим данным ЕМИАС ищет ваше прикрепление к поликлинике и доступных врачей. Эти данные хранятся только на устройстве.
+3. **Выбор специальности и врача.** Выберите нужную специальность из списка, затем — конкретного врача. Для каждого врача показывается ближайшее доступное расписание.
+4. **Настройка мониторинга.** На экране настройки задаются параметры отслеживания:
+   - **Желаемые даты** — один или несколько дней из ближайших 30, в которые вас устроит приём (кнопки с датами, например «Пн, 27 июл.»).
+   - **Временной диапазон** — время «с» и «по», в которое должен попадать талон (например, чтобы отфильтровать только утренние приёмы).
+   - **Режим работы** — «Уведомление» (прислать push, когда появится слот) или «Автозапись» (записать на приём автоматически, без подтверждения).
+   - **Интервал проверки** — как часто опрашивать расписание: от 30 секунд до 1 часа. Чем короче интервал, тем выше шанс поймать талон первым, но и тем активнее расходуется батарея.
+5. **Запуск и контроль.** После нажатия «Начать мониторинг» запускается фоновый сервис. На главном экране отображается статус мониторинга, его можно остановить в любой момент. В разделе «Журнал» видна история всех проверок и найденных/забронированных талонов.
 
 ### Технологии
 
@@ -53,6 +67,19 @@ TouchEmias — Android-приложение для автоматическог�
 - Android 10 (API 29) и выше
 - Полис ОМС московского фонда
 - Прикрепление к московской поликлинике в системе ЕМИАС
+
+### Требуемые разрешения
+
+Так как мониторинг работает локально на телефоне (см. выше), приложению нужны системные разрешения для стабильной фоновой работы. Разрешения, которые система может запросить у пользователя явно (например, показ уведомлений), запрашиваются **только в момент, когда они реально нужны** — например, право на уведомления запрашивается не при установке, а только при нажатии кнопки «Начать мониторинг» в режиме уведомлений.
+
+| Разрешение | Зачем нужно |
+|---|---|
+| `INTERNET` | Обращение к API портала ЕМИАС и к странице авторизации mos.ru |
+| `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC` | Позволяют сервису мониторинга работать в фоне и не быть остановленным системой во время проверки расписания |
+| `POST_NOTIFICATIONS` (Android 13+) | Показ push-уведомления о найденном свободном талоне в режиме «Уведомление». Запрашивается у пользователя только при старте мониторинга |
+| `WAKE_LOCK` | Не даёт устройству уходить в глубокий сон между проверками расписания, пока мониторинг активен |
+| `SCHEDULE_EXACT_ALARM` | Точное соблюдение выбранного интервала проверки (от 30 секунд до 1 часа) |
+| `RECEIVE_BOOT_COMPLETED` | Автоматическое возобновление мониторинга после перезагрузки устройства, но только если на момент перезагрузки был запущен активный мониторинг |
 
 ### Сборка
 
@@ -108,6 +135,8 @@ app/src/main/java/ru/touchemiasapp/
 
 TouchEmias is an Android app for automated monitoring of available doctor appointment slots on the EMIAS portal (emias.info — Moscow's unified medical information and analysis system). It polls the schedule in the background and notifies the user when a slot becomes available, and can automatically book it.
 
+The monitoring service runs **entirely locally, on the phone itself** — there is no dedicated server or cloud backend. The app periodically polls the EMIAS API from a background `Foreground Service` on the user's device, which is why it needs a number of system permissions to work reliably (see [Required permissions](#required-permissions)).
+
 ### Features
 
 - **Login via mos.ru** — authentication through SUDIR OAuth (Moscow government services portal)
@@ -118,6 +147,18 @@ TouchEmias is an Android app for automated monitoring of available doctor appoin
 - **Background operation** — monitoring continues after the app is closed via a Foreground Service
 - **Auto-start** — resumes monitoring after device reboot
 - **Event log** — history of checks and service actions
+
+### How to use
+
+1. **Sign in.** On first launch, the app opens the `login.mos.ru` login page in an embedded `WebView`. Log in with your mos.ru (SUDIR) account — same as on the government services website. Once login succeeds, the app captures the access token and moves to the next step.
+2. **Policy details.** Enter your OMS (compulsory health insurance) policy number and date of birth — EMIAS uses this to look up your clinic registration and available doctors. This data is stored on the device only.
+3. **Specialty and doctor selection.** Pick the specialty you need from the list, then a specific doctor. Each doctor's card shows their nearest available schedule.
+4. **Monitoring setup.** The setup screen lets you configure:
+   - **Desired dates** — one or more days within the next 30 that would work for you (date buttons, e.g. "Mon, Jul 27").
+   - **Time range** — a "from" and "to" time the slot must fall within (e.g. to only catch morning appointments).
+   - **Mode** — "Notify" (send a push notification when a slot appears) or "Auto-book" (book the appointment automatically, without confirmation).
+   - **Polling interval** — how often to check the schedule: from 30 seconds to 1 hour. A shorter interval increases the chance of catching a slot first but uses more battery.
+5. **Start and control.** Tapping "Start monitoring" launches the background service. The main screen shows the monitoring status and lets you stop it at any time. The "Logs" screen shows the history of every check and every slot found or booked.
 
 ### Tech stack
 
@@ -151,6 +192,19 @@ TouchEmias is an Android app for automated monitoring of available doctor appoin
 - Android 10 (API 29) or higher
 - Moscow OMS (compulsory health insurance) policy
 - Registration at a Moscow clinic in the EMIAS system
+
+### Required permissions
+
+Since monitoring runs locally on the phone (see above), the app needs system permissions to keep working reliably in the background. Permissions that the system can prompt the user for explicitly (e.g. notifications) are requested **only at the moment they're actually needed** — for example, the notification permission is not requested at install time, only when the user taps "Start monitoring" in notification mode.
+
+| Permission | Why it's needed |
+|---|---|
+| `INTERNET` | Talking to the EMIAS API and the mos.ru login page |
+| `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC` | Let the monitoring service keep running in the background and avoid being killed by the system while checking the schedule |
+| `POST_NOTIFICATIONS` (Android 13+) | Shows a push notification when a free slot is found in "Notify" mode. Requested from the user only when monitoring is started |
+| `WAKE_LOCK` | Prevents the device from going into deep sleep between schedule checks while monitoring is active |
+| `SCHEDULE_EXACT_ALARM` | Keeps the chosen polling interval accurate (from 30 seconds to 1 hour) |
+| `RECEIVE_BOOT_COMPLETED` | Automatically resumes monitoring after a device reboot, but only if monitoring was actively running at the time of the reboot |
 
 ### Build
 
